@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sahaara — a quiet place to talk</title>
+
+<!--
+  ============================================================
+  QUICK CONFIG — change these and you've re-branded the whole app.
+  You do not need to touch anything below this block.
+  ============================================================
+-->
+<script>
+  window.CONFIG = {
+    NGO_NAME: "Your NGO Name",           // shown in the footer
+    BOT_NAME: "Sahaara",                 // the chatbot's name (means "support" in Hindi/Urdu)
+    TAGLINE: "a quiet place to talk",
+    WELCOME_MESSAGE: "Hi, I'm glad you're here. Whatever you're carrying today, you don't have to carry it alone for these few minutes. Talk to me like a friend — there's no right way to start.",
+    // Crisis helplines shown the moment risk language is detected. Edit freely for your country/region.
+    HELPLINES: [
+      { name: "Tele MANAS (Govt. of India, 24x7, all languages)", phone: "14416", display: "14416" },
+      { name: "KIRAN Mental Health Helpline", phone: "18005990019", display: "1800-599-0019" },
+      { name: "Vandrevala Foundation Helpline", phone: "18602662345", display: "1860-266-2345" }
+    ]
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-deep:#120f26;
+    --bg-deep-2:#0b0920;
+    --panel:rgba(32,28,66,0.5);
+    --panel-solid:#1c1836;
+    --border-soft:rgba(255,255,255,0.08);
+    --teal:#6ee7c0;
+    --lavender:#b79ced;
+    --rose:#f2a6c1;
+    --gold:#ffd9a0;
+    --text-primary:#f3f1fb;
+    --text-muted:#9b95c0;
+    --crisis:#ff8b6a;
+    --crisis-bg:#2b1a20;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:radial-gradient(ellipse at top, var(--bg-deep) 0%, var(--bg-deep-2) 100%);
+    font-family:'Sora', sans-serif;
+    color:var(--text-primary);
+    overflow:hidden;
+  }
+
+  /* ---------- Aurora background ---------- */
+  .aurora{
+    position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+  }
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(90px);
+    opacity:0.35;
+    mix-blend-mode:screen;
+    animation:drift 22s ease-in-out infinite;
+  }
+  .blob.b1{ width:520px; height:520px; background:var(--teal); top:-10%; left:-10%; animation-duration:26s; }
+  .blob.b2{ width:460px; height:460px; background:var(--lavender); bottom:-15%; right:-5%; animation-duration:30s; animation-delay:-8s; }
+  .blob.b3{ width:380px; height:380px; background:var(--rose); top:30%; right:20%; animation-duration:24s; animation-delay:-4s; }
+
+  @keyframes drift{
+    0%{ transform:translate(0,0) scale(1); }
+    33%{ transform:translate(40px,-30px) scale(1.08); }
+    66%{ transform:translate(-30px,20px) scale(0.95); }
+    100%{ transform:translate(0,0) scale(1); }
+  }
+
+  .stars{
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1.5px 1.5px at 85% 20%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 10% 65%, rgba(255,255,255,0.3), transparent);
+    opacity:0.6;
+    pointer-events:none;
+  }
+
+  /* ---------- Layout ---------- */
+  .app{
+    position:relative; z-index:1;
+    height:100%;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding:24px 16px 16px;
+  }
+
+  /* ---------- Breathing orb (signature element) ---------- */
+  .orb-wrap{
+    display:flex; flex-direction:column; align-items:center;
+    margin-bottom:10px;
+  }
+  .orb{
+    width:56px; height:56px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff 0%, var(--teal) 18%, var(--lavender) 60%, transparent 75%);
+    box-shadow:0 0 40px 6px rgba(183,156,237,0.45);
+    animation:breathe 8s ease-in-out infinite;
+  }
+  .orb.thinking{ animation-duration:2.2s; }
+  @keyframes breathe{
+    0%,100%{ transform:scale(0.85); opacity:0.85; }
+    50%{ transform:scale(1.15); opacity:1; }
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:22px;
+    margin-top:10px;
+    letter-spacing:0.3px;
+  }
+  .tagline{
+    font-size:13px;
+    color:var(--text-muted);
+    margin-top:2px;
+    font-style:italic;
+    font-family:'Fraunces', serif;
+  }
+
+  /* ---------- Chat panel ---------- */
+  .panel{
+    width:100%; max-width:640px;
+    flex:1;
+    display:flex; flex-direction:column;
+    background:var(--panel);
+    backdrop-filter:blur(24px);
+    -webkit-backdrop-filter:blur(24px);
+    border:1px solid var(--border-soft);
+    border-radius:26px;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    margin-top:6px;
+    min-height:0;
+  }
+
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding:22px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .messages::-webkit-scrollbar{ width:6px; }
+  .messages::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:10px; }
+
+  .msg{
+    max-width:80%;
+    padding:12px 16px;
+    border-radius:18px;
+    font-size:14.5px;
+    line-height:1.5;
+    animation:rise 0.35s ease;
+  }
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .msg.bot{
+    align-self:flex-start;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--border-soft);
+    border-bottom-left-radius:4px;
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:linear-gradient(135deg, rgba(110,231,192,0.25), rgba(183,156,237,0.25));
+    border:1px solid rgba(255,255,255,0.12);
+    border-bottom-right-radius:4px;
+  }
+  .msg.typing{
+    display:flex; gap:4px; align-items:center;
+    padding:14px 18px;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background:var(--text-muted); animation:blink 1.2s infinite; }
+  .dot:nth-child(2){ animation-delay:0.2s; }
+  .dot:nth-child(3){ animation-delay:0.4s; }
+  @keyframes blink{ 0%,80%,100%{opacity:0.2;} 40%{opacity:1;} }
+
+  /* ---------- Crisis card ---------- */
+  .crisis-card{
+    align-self:stretch;
+    background:var(--crisis-bg);
+    border:1px solid rgba(255,139,106,0.4);
+    border-radius:18px;
+    padding:18px;
+    animation:rise 0.35s ease;
+  }
+  .crisis-card h4{
+    margin:0 0 6px; color:var(--crisis); font-size:15px; font-family:'Fraunces', serif; font-weight:600;
+  }
+  .crisis-card p{ margin:0 0 12px; font-size:13.5px; color:var(--text-primary); line-height:1.5; }
+  .helpline-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-top:1px solid rgba(255,255,255,0.08);
+    font-size:13px;
+  }
+  .helpline-row:first-of-type{ border-top:none; }
+  .helpline-row a{
+    color:var(--bg-deep); background:var(--crisis);
+    text-decoration:none; font-weight:600; font-size:12.5px;
+    padding:6px 14px; border-radius:20px; white-space:nowrap; margin-left:10px;
+  }
+
+  /* ---------- Input ---------- */
+  .input-row{
+    display:flex; gap:10px; padding:16px;
+    border-top:1px solid var(--border-soft);
+    background:rgba(0,0,0,0.15);
+  }
+  .input-row input{
+    flex:1;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--border-soft);
+    border-radius:20px;
+    padding:12px 18px;
+    color:var(--text-primary);
+    font-family:'Sora', sans-serif;
+    font-size:14px;
+    outline:none;
+  }
+  .input-row input::placeholder{ color:var(--text-muted); }
+  .input-row input:focus{ border-color:var(--lavender); }
+  .send-btn{
+    width:44px; height:44px; border-radius:50%;
+    border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--teal), var(--lavender));
+    color:var(--bg-deep); font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 0.15s ease;
+  }
+  .send-btn:hover{ transform:scale(1.06); }
+  .send-btn:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .locked-banner{
+    padding:12px 16px; text-align:center; font-size:12.5px; color:var(--text-muted);
+    border-top:1px solid var(--border-soft);
+  }
+
+  footer{
+    max-width:640px; width:100%;
+    text-align:center; font-size:11px; color:var(--text-muted);
+    padding:12px 8px 4px; line-height:1.5;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .blob, .orb{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="stars"></div>
+
+<div class="app">
+  <div class="orb-wrap">
+    <div class="orb" id="orb"></div>
+    <div class="brand" id="brandName"></div>
+    <div class="tagline" id="tagline"></div>
+  </div>
+
+  <div class="panel">
+    <div class="messages" id="messages"></div>
+
+    <div class="input-row" id="inputRow">
+      <input type="text" id="userInput" placeholder="Type how you're feeling..." autocomplete="off">
+      <button class="send-btn" id="sendBtn" aria-label="Send">➤</button>
+    </div>
+    <div class="locked-banner" id="lockedBanner" style="display:none;">
+      This conversation has paused so you can reach a real person. Please use one of the numbers above — you deserve support from someone who can truly help.
+    </div>
+  </div>
+
+  <footer id="footerText"></footer>
+</div>
+
+<script>
+const { NGO_NAME, BOT_NAME, TAGLINE, WELCOME_MESSAGE, HELPLINES } = window.CONFIG;
+
+document.getElementById('brandName').textContent = BOT_NAME;
+document.getElementById('tagline').textContent = TAGLINE;
+document.getElementById('footerText').innerHTML =
+  `${BOT_NAME} is a supportive companion built by <strong>${NGO_NAME}</strong> — not a therapist and not a replacement for professional care.<br>If you are ever in danger, please contact local emergency services.`;
+
+// ---------- Crisis keyword detection (runs BEFORE any AI call) ----------
+const CRISIS_KEYWORDS = [
+  "suicide","suicidal","kill myself","end my life","end it all",
+  "want to die","don't want to live","dont want to live","no reason to live",
+  "self harm","self-harm","hurt myself","hurting myself","harming myself",
+  "cutting myself","can't go on","cant go on","better off dead",
+  "take my life","no point in living","give up on life"
+];
+
+function detectCrisis(text){
+  const t = text.toLowerCase();
+  return CRISIS_KEYWORDS.some(k => t.includes(k));
+}
+
+// ---------- State ----------
+let history = []; // {role, content}
+let crisisMode = false;
+
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const orb = document.getElementById('orb');
+
+function scrollToBottom(){
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addMessage(role, text){
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function addCrisisCard(){
+  const card = document.createElement('div');
+  card.className = 'crisis-card';
+  const rows = HELPLINES.map(h => `
+    <div class="helpline-row">
+      <span>${h.name}</span>
+      <a href="tel:${h.phone}">Call ${h.display}</a>
+    </div>`).join('');
+  card.innerHTML = `
+    <h4>You matter, and support is available right now</h4>
+    <p>It sounds like you might be going through something really heavy. I'm not able to help with this the way a trained person can — please reach out to one of these free, confidential helplines. Someone is ready to listen.</p>
+    ${rows}
+  `;
+  messagesEl.appendChild(card);
+  scrollToBottom();
+}
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'msg bot typing';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+function hideTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+function lockInput(){
+  crisisMode = true;
+  document.getElementById('inputRow').style.display = 'none';
+  document.getElementById('lockedBanner').style.display = 'block';
+}
+
+// ---------- AI call ----------
+const SYSTEM_PROMPT = `You are ${BOT_NAME}, a warm, gentle peer-support companion inside a mental wellbeing app run by a nonprofit that mainly serves people from underprivileged and low-income backgrounds.
+
+Who you're talking to (keep this in mind, but never assume it out loud unless they tell you):
+- Many people here carry real financial stress, unstable work, crowded homes, or family responsibility from a young age. That stress is circumstantial, not a character flaw — never imply someone should "just be more positive" about it.
+- Self-worth often gets tied to being useful, earning, or not being "a burden." Gently separate a person's worth from their income, job, or ability to provide — they are not less because they are struggling financially.
+- Asking for help can feel like weakness, shame, or "airing family matters." Normalize it warmly, without lecturing.
+- Don't assume access to money, privacy, a quiet room, therapy, apps, or even a reliable phone. Coping ideas must be free and realistic anywhere (breathing, a short walk, writing on paper, talking to one trusted person) — never suggest paid apps, paid therapy, or "treat yourself" spending as a first idea.
+- Speak plainly. Avoid therapy jargon and self-help buzzwords ("self-care," "boundaries," "manifest") unless the person uses them first — say the same thing in everyday words instead.
+
+Rules you always follow:
+- You are NOT a therapist or doctor. Never diagnose. Never give medical, psychiatric, or medication advice.
+- Keep replies short and human: 2-4 sentences, warm tone, plain language.
+- Ask at most one gentle, open question per reply so the person can keep sharing.
+- Validate feelings without judgment. Never minimize what someone shares, and never suggest their situation is their own fault.
+- Build self-reliance by noticing and naming small things the person is already doing right — a choice they made, a way they coped, a responsibility they're carrying — rather than telling them what to do. Confidence grows from being seen, not from advice.
+- For everyday stress, loneliness, family or money pressure: listen, reflect back what you heard, and only if it fits naturally, offer one small free coping idea.
+- If the person seems to be in serious distress, gently encourage them to talk to a counselor, community health worker, or someone they trust — framed as reaching out for support, not as "getting treatment."
+- Never discuss methods of self-harm in any detail under any circumstance.
+- Sound like a steady, respectful friend who never talks down to anyone — not a manual, not a lecture.`;
+
+async function callAI(userText){
+  const body = {
+    system: SYSTEM_PROMPT,
+    messages: [...history, { role: "user", content: userText }]
+  };
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+  if(!res.ok){
+    console.error(data);
+    return "I'm having trouble connecting right now — please try again in a moment.";
+  }
+  return data.text;
+}
+
+// ---------- Send flow ----------
+async function handleSend(){
+  const text = inputEl.value.trim();
+  if(!text || crisisMode) return;
+
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+  inputEl.value = '';
+  sendBtn.disabled = true;
+
+  if(detectCrisis(text)){
+    addCrisisCard();
+    lockInput();
+    sendBtn.disabled = false;
+    return;
+  }
+
+  orb.classList.add('thinking');
+  showTyping();
+  try{
+    const reply = await callAI(text);
+    hideTyping();
+    addMessage('bot', reply);
+    history.push({ role: 'assistant', content: reply });
+  }catch(err){
+    hideTyping();
+    addMessage('bot', "Sorry, I lost my train of thought for a second. Could you try sending that again?");
+    console.error(err);
+  }
+  orb.classList.remove('thinking');
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+sendBtn.addEventListener('click', handleSend);
+inputEl.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleSend(); });
+
+// ---------- Init ----------
+addMessage('bot', WELCOME_MESSAGE);
+</script>
+</body>
+</html>
